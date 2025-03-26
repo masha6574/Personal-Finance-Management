@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -21,23 +23,37 @@ const otpStore = {};
 // ✅ **Route: Sign Up (Register User)**
 router.post("/signup", async (req, res) => {
     try {
-        const { email, password } = req.body;
-        let user = await User.findOne({ email });
+        const { email, password, firstName, lastName, phone, spendingHabits, spendingCategories } = req.body;
 
-        if (user) {
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
             return res.status(400).json({ error: "User already exists" });
         }
 
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-        user = new User({ email, password: hashedPassword });
 
-        await user.save();
+        // Create new user
+        const newUser = new User({
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phone,
+            spendingHabits,
+            spendingCategories,
+        });
 
+        await newUser.save();
         res.status(201).json({ message: "User registered successfully" });
+
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
+
 
 // ✅ **Route: Log In with Password**
 router.post("/login", async (req, res) => {

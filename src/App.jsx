@@ -3,6 +3,8 @@ import HomePage from "./components/HomePage"
 import About from "./components/About"
 import Login from "./components/Login"
 import Signup from "./components/Signup"
+import Dashboard from "./components/Dashboard"
+import ProtectedRoute from "./components/ProtectedRoute"
 function App() {
   const router = createBrowserRouter([
     {
@@ -20,6 +22,11 @@ function App() {
     {
       path: "/signup",
       element: <Signup />
+    },
+    {
+      path: "/dashboard",
+      element: <ProtectedRoute />,
+      children: [{ path: "/dashboard", element: <Dashboard /> }],
     }
   ])
 

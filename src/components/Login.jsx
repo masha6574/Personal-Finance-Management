@@ -1,4 +1,6 @@
+/* eslint-disable no-unused-vars */
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
     const [email, setEmail] = useState("");
@@ -6,39 +8,56 @@ const Login = () => {
     const [otp, setOtp] = useState("");
     const [isOtpLogin, setIsOtpLogin] = useState(false); // Toggle for OTP login
     const [otpSent, setOtpSent] = useState(false);
+    const [error, setError] = useState(""); // Error handling
+    const navigate = useNavigate(); // Redirect after login
 
+    // Function to handle login (Password or OTP)
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError("");
+
         const endpoint = isOtpLogin ? "/auth/verify-otp" : "/auth/login";
         const body = isOtpLogin ? { email, otp } : { email, password };
 
-        const response = await fetch(`http://localhost:5000${endpoint}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
+        try {
+            const response = await fetch(`http://localhost:5000${endpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+            });
 
-        const data = await response.json();
-        if (response.ok) {
-            alert("Login successful!");
-        } else {
-            alert(`Login Failed: ${data.error}`);
+            const data = await response.json();
+            if (response.ok) {
+                localStorage.setItem("token", data.token); // Store JWT token
+                navigate("/dashboard"); // Redirect to dashboard
+            } else {
+                setError(data.error || "Login Failed!");
+            }
+        } catch (err) {
+            setError("Server Error! Try again later.");
         }
     };
 
+    // Function to send OTP
     const sendOtp = async () => {
-        const response = await fetch("http://localhost:5000/auth/send-otp", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email }),
-        });
+        setError("");
 
-        const data = await response.json();
-        if (response.ok) {
-            alert("OTP sent to your email.");
-            setOtpSent(true);
-        } else {
-            alert(`Error: ${data.error}`);
+        try {
+            const response = await fetch("http://localhost:5000/auth/send-otp", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert("OTP sent to your email.");
+                setOtpSent(true);
+            } else {
+                setError(data.error || "Failed to send OTP.");
+            }
+        } catch (err) {
+            setError("Server Error! Try again later.");
         }
     };
 
@@ -47,7 +66,11 @@ const Login = () => {
             <h2 className="text-2xl font-bold text-center mb-4">
                 {isOtpLogin ? "Login with OTP" : "Login with Password"}
             </h2>
+
+            {error && <p className="text-red-500 text-center">{error}</p>} {/* Display error messages */}
+
             <form onSubmit={handleLogin} className="space-y-4">
+                {/* Email Input */}
                 <input
                     type="email"
                     placeholder="Enter email"
@@ -60,6 +83,7 @@ const Login = () => {
                 {isOtpLogin ? (
                     <>
                         {otpSent ? (
+                            // OTP Input
                             <input
                                 type="text"
                                 placeholder="Enter OTP"
@@ -69,6 +93,7 @@ const Login = () => {
                                 required
                             />
                         ) : (
+                            // Send OTP Button
                             <button
                                 type="button"
                                 onClick={sendOtp}
@@ -79,6 +104,7 @@ const Login = () => {
                         )}
                     </>
                 ) : (
+                    // Password Input
                     <input
                         type="password"
                         placeholder="Enter password"
@@ -89,6 +115,7 @@ const Login = () => {
                     />
                 )}
 
+                {/* Login Button */}
                 <button
                     type="submit"
                     className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
@@ -97,8 +124,12 @@ const Login = () => {
                 </button>
             </form>
 
+            {/* Toggle Between Password and OTP Login */}
             <button
-                onClick={() => setIsOtpLogin(!isOtpLogin)}
+                onClick={() => {
+                    setIsOtpLogin(!isOtpLogin);
+                    setOtpSent(false); // Reset OTP state
+                }}
                 className="w-full text-blue-500 mt-4 underline"
             >
                 {isOtpLogin ? "Login with Password" : "Login with OTP"}

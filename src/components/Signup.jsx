@@ -1,82 +1,103 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Hook for navigation
 
 const Signup = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState(null);
-    const [success, setSuccess] = useState(null);
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // Hook for redirection
 
-    const handleSignup = async (e) => {
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+        firstName: "",
+        lastName: "",
+        phone: "",
+        spendingHabits: "",
+        spendingCategories: [],
+    });
+
+    const spendingOptions = [
+        "Groceries", "Dining", "Entertainment", "Travel", "Shopping",
+        "Education", "Healthcare", "Transportation", "Bills", "Investments"
+    ];
+
+    // Handle input field changes
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
+
+    // Handle checkbox selection for spending categories
+    const handleCheckboxChange = (category) => {
+        setFormData((prevState) => {
+            const { spendingCategories } = prevState;
+            return {
+                ...prevState,
+                spendingCategories: spendingCategories.includes(category)
+                    ? spendingCategories.filter((item) => item !== category)
+                    : [...spendingCategories, category],
+            };
+        });
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
-        setSuccess(null);
-
         try {
             const response = await fetch("http://localhost:5000/auth/signup", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
             });
 
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Signup failed");
+            if (response.ok) {
+                // Store token in localStorage
+                localStorage.setItem("token", data.token);
 
-            setSuccess("Signup successful! Redirecting...");
-            setTimeout(() => navigate("/login"), 2000); // Redirect to login page after 2s
+                alert("Signup successful! Redirecting to Dashboard...");
+                navigate("/dashboard"); // Redirect user to Dashboard
+            } else {
+                alert(data.error || "Signup failed");
+            }
         } catch (error) {
-            setError(error.message);
+            console.error(error);
+            alert("Error signing up");
         }
     };
 
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gray-100">
-            <div className="bg-white p-8 rounded-lg shadow-md w-96">
-                <h2 className="text-2xl font-bold text-center text-gray-700">Sign Up</h2>
+        <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-lg">
+            <h2 className="text-xl font-bold mb-4">Signup</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <input name="firstName" placeholder="First Name" onChange={handleChange} className="w-full p-2 border rounded" required />
+                <input name="lastName" placeholder="Last Name" onChange={handleChange} className="w-full p-2 border rounded" required />
+                <input name="email" type="email" placeholder="Email" onChange={handleChange} className="w-full p-2 border rounded" required />
+                <input name="password" type="password" placeholder="Password" onChange={handleChange} className="w-full p-2 border rounded" required />
+                <input name="phone" placeholder="Phone Number" onChange={handleChange} className="w-full p-2 border rounded" />
 
-                {error && <p className="text-red-500 text-sm text-center mt-2">{error}</p>}
-                {success && <p className="text-green-500 text-sm text-center mt-2">{success}</p>}
+                <textarea name="spendingHabits" placeholder="Describe your spending habits" onChange={handleChange} className="w-full p-2 border rounded"></textarea>
 
-                <form onSubmit={handleSignup} className="mt-4">
-                    <div>
-                        <label className="block text-gray-600 text-sm mb-1">Email</label>
-                        <input
-                            type="email"
-                            placeholder="Enter your email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-                        />
+                <fieldset>
+                    <legend className="text-lg font-semibold">Select Spending Categories:</legend>
+                    <div className="grid grid-cols-2 gap-2">
+                        {spendingOptions.map((category) => (
+                            <label key={category} className="flex items-center space-x-2">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.spendingCategories.includes(category)}
+                                    onChange={() => handleCheckboxChange(category)}
+                                />
+                                <span>{category}</span>
+                            </label>
+                        ))}
                     </div>
+                </fieldset>
 
-                    <div className="mt-4">
-                        <label className="block text-gray-600 text-sm mb-1">Password</label>
-                        <input
-                            type="password"
-                            placeholder="Enter your password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-                        />
-                    </div>
+                <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Signup</button>
+            </form>
 
-                    <button
-                        type="submit"
-                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md mt-4 hover:bg-blue-600 transition"
-                    >
-                        Sign Up
-                    </button>
-                </form>
-
-                <p className="text-sm text-gray-600 text-center mt-4">
-                    Already have an account? <a href="/login" className="text-blue-500 hover:underline">Log in</a>
-                </p>
-            </div>
+            <p className="mt-4 text-center">
+                Already have an account? <a href="/login" className="text-blue-600">Login here</a>
+            </p>
         </div>
     );
 };
